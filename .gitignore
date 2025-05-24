@@ -289,3 +289,4 @@ __pycache__/
 
 # raw documents
 raw-documents/
+/course-work/Implementations/Project/VacationManager/appsettings.Development.json
