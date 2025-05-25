@@ -27,14 +27,14 @@ namespace VacationManager.Auth.Services
             }
 
             //Success! Add details here that identifies the user
-            var claims = new List<Claim>()
+            List<Claim> claims = new List<Claim>()
             {
                 new Claim("FirstName", "Juan")
             };
 
-            var claimsIdentity = new ClaimsIdentity
+            ClaimsIdentity claimsIdentity = new ClaimsIdentity
                 (claims, Scheme.Name);
-            var claimsPrincipal = new ClaimsPrincipal
+            ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal
                 (claimsIdentity);
 
             return AuthenticateResult.Success

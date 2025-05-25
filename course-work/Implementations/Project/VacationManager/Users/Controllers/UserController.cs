@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VacationManager.Auth.Models;
 using VacationManager.Users.Entities;
 using VacationManager.Users.Models;
 using VacationManager.Users.Services.Abstractions;
@@ -10,14 +11,14 @@ namespace VacationManager.Users.Controllers
     [Route("[controller]")]
     public class UserController(IUserService userService) : ControllerBase
     {
-        [Authorize(Roles = "Employee,Manager,CEO")]
+        [Authorize(Roles = $"{nameof(Roles.Manager)},{nameof(Roles.CEO)}")]
         /// <summary>
         /// Get user by Id. Allowed roles: CEO, Manager, Employee
         /// </summary>
         [HttpGet("get/{id:int}")]
         public async Task<IActionResult> GetUser([FromRoute] int id)
         {
-            var user = await userService.GetUserByIdAsync(id);
+            User? user = await userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
             return Ok(user);
         }
@@ -28,7 +29,7 @@ namespace VacationManager.Users.Controllers
         [HttpGet("get-by-mail")]
         public async Task<IActionResult> GetUserByMail([FromQuery] string email)
         {
-            var user = await userService.GetUserByEmailAsync(email);
+            User? user = await userService.GetUserByEmailAsync(email);
             if (user == null) return NotFound();
             return Ok(user);
         }
@@ -39,7 +40,7 @@ namespace VacationManager.Users.Controllers
         [HttpGet("get-by-phone")]
         public async Task<IActionResult> GetUserByPhone([FromQuery] string phone)
         {
-            var user = await userService.GetUserByPhoneAsync(phone);
+            User? user = await userService.GetUserByPhoneAsync(phone);
             if (user == null) return NotFound();
             return Ok(user);
         }
@@ -53,7 +54,7 @@ namespace VacationManager.Users.Controllers
                                                   [FromQuery] string sortBy = "Id",
                                                   [FromQuery] string sortDirection = "asc")
         {
-            var users = await userService.GetUsersAsync(page, pageSize, sortBy, sortDirection);
+            IList<User> users = await userService.GetUsersAsync(page, pageSize, sortBy, sortDirection);
             return Ok(users);
         }
 
@@ -63,10 +64,31 @@ namespace VacationManager.Users.Controllers
         [HttpPut("update")]
         public async Task<IActionResult> UpdateUser([FromBody] User user)
         {
-            if (user == null) return BadRequest();
+            if (user == null)
+                return BadRequest();
 
-            var isSuccess = await userService.UpdateUserAsync(user);
-            if (!isSuccess) return BadRequest("User not found or update failed");
+            bool isSuccess = await userService.UpdateUserAsync(user);
+            if (!isSuccess)
+                return BadRequest("User not found or update failed");
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Changes user's team: CEO
+        /// </summary>
+        [HttpPut("change-team")]
+        public async Task<IActionResult> UpdateUser([FromBody] int userId,[FromQuery] int? teamId = null)
+        {
+            User? user = await userService.GetUserByIdAsync(userId);
+
+            if (user == null)
+                return BadRequest();
+
+            user.TeamId = teamId;
+            bool isSuccess = await userService.UpdateUserAsync(user);
+            if (!isSuccess)
+                return BadRequest("User not found or update failed");
 
             return Ok();
         }
@@ -75,11 +97,13 @@ namespace VacationManager.Users.Controllers
         /// Verify a user. Allowed roles: CEO, Manager
         /// </summary>
         [HttpPut("verifyUser")]
+        [Authorize(Roles = $"{nameof(Roles.Dev)}")]
         public async Task<IActionResult> VerifyUser([FromBody] VerifyUserModel user)
         {
-            if (user == null) return BadRequest();
+            if (user == null)
+                return BadRequest();
 
-            var isSuccess = await userService.VerifyUserAsync(user);
+            bool isSuccess = await userService.VerifyUserAsync(user);
             if (!isSuccess) return BadRequest("User not found or verification failed");
 
             return Ok();
@@ -91,7 +115,7 @@ namespace VacationManager.Users.Controllers
         [HttpPut("rejectUser/{userId:int}")]
         public async Task<IActionResult> RejectUser([FromRoute] int userId)
         {
-            var isSuccess = await userService.RejectUserAsync(userId);
+            bool isSuccess = await userService.RejectUserAsync(userId);
             if (!isSuccess) return BadRequest("User not found or rejection failed");
 
             return Ok();
@@ -103,10 +127,30 @@ namespace VacationManager.Users.Controllers
         [HttpDelete("delete/{userId:int}")]
         public async Task<IActionResult> DeleteUser([FromRoute] int userId)
         {
-            var isSuccess = await userService.DeleteUserAsync(userId);
+            bool isSuccess = await userService.DeleteUserAsync(userId);
             if (!isSuccess) return BadRequest("User not found or deletion failed");
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Register a new user
+        /// </summary>
+        [HttpPost("create/ceo")]
+        [Authorize(Roles = nameof(Roles.Dev))]
+        public async Task<IActionResult> Register([FromBody] int userId)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            User? existingUser = await userService.GetUserByIdAsync(userId);
+            if (existingUser == null)
+                return BadRequest("User does not exist");
+
+            existingUser.Role = Roles.CEO;
+            await userService.UpdateUserAsync(existingUser);
+
+            return Ok("CEO added successfully");
         }
     }
 }

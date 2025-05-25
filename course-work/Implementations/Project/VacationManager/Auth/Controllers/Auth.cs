@@ -25,14 +25,14 @@ namespace VacationManager.Auth.Controllers
                 return BadRequest("Invalid login data.");
 
             // Find user by email or username (assuming Username is email here)
-            var user = await userService.GetUserByEmailAsync(loginModel.Username);
+            User? user = await userService.GetUserByEmailAsync(loginModel.Username);
             if (user == null)
             {
                 logger.LogWarning("Login failed: user not found with username {Username}", loginModel.Username);
                 return Unauthorized();
             }
 
-            var hashedInputPassword = PasswordHelper.HashPassword(loginModel.Password, user.Salt);
+            string hashedInputPassword = PasswordHelper.HashPassword(loginModel.Password, user.Salt);
             if (user.Password != hashedInputPassword)
             {
                 logger.LogWarning("Login failed: invalid password for user {Username}", loginModel.Username);
@@ -41,7 +41,7 @@ namespace VacationManager.Auth.Controllers
 
 
             // TODO: Generate JWT or session token here
-            var token = JwtHelper.GenerateJwtToken(user, options.Value);
+            string token = JwtHelper.GenerateJwtToken(user, options.Value);
             return Ok(new { Message = "Login successful", Token = token });
         }
 
@@ -56,7 +56,7 @@ namespace VacationManager.Auth.Controllers
                 return BadRequest(ModelState);
 
             // Check if user with email already exists
-            var existingUser = await userService.GetUserByEmailAsync(userRegisterModel.Email);
+            User? existingUser = await userService.GetUserByEmailAsync(userRegisterModel.Email);
             if (existingUser != null)
             {
                 logger.LogWarning("Registration failed: email {Email} already in use", userRegisterModel.Email);
@@ -64,10 +64,10 @@ namespace VacationManager.Auth.Controllers
             }
 
             // Inside Register method
-            var salt = PasswordHelper.GenerateSalt();
-            var hashedPassword = PasswordHelper.HashPassword(userRegisterModel.Password, salt);
+            string salt = PasswordHelper.GenerateSalt();
+            string hashedPassword = PasswordHelper.HashPassword(userRegisterModel.Password, salt);
 
-            var newUser = new User
+            User newUser = new()
             {
                 Name = userRegisterModel.Name,
                 LastName = userRegisterModel.LastName,
@@ -75,12 +75,12 @@ namespace VacationManager.Auth.Controllers
                 PhoneNumber = userRegisterModel.PhoneNumber,
                 Password = hashedPassword,
                 Salt = salt,
-                Role = Roles.Employee,
+                Role = Roles.Unverified,
                 CreatedAt = DateTime.UtcNow
             };
 
             // Add user to database (implement AddUserAsync in your service)
-            var isAdded = await userService.AddUserAsync(newUser);
+            bool isAdded = await userService.AddUserAsync(newUser);
             if (!isAdded)
             {
                 logger.LogError("Registration failed for email {Email}", userRegisterModel.Email);
@@ -89,12 +89,6 @@ namespace VacationManager.Auth.Controllers
 
             logger.LogInformation("User registered successfully with email {Email}", userRegisterModel.Email);
             return Ok("Registration successful");
-        }
-
-        private string GenerateSalt()
-        {
-            // Simple salt generation example - replace with your secure salt generation
-            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
         }
     }
 

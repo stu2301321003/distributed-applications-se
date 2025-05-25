@@ -11,9 +11,9 @@ namespace VacationManager.Auth.Helpers
     {
         public static string GenerateJwtToken(User user, JwtSettings jwtSettings)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(jwtSettings.Key); // store securely in appsettings
-            var claims = new List<Claim>
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            byte[] key = Encoding.ASCII.GetBytes(jwtSettings.Key); // store securely in appsettings
+            List<Claim> claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Email, user.Email),
@@ -21,7 +21,7 @@ namespace VacationManager.Auth.Helpers
                 new("Name", $"{user.Name} {user.LastName}")
             };
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(1),
@@ -30,7 +30,7 @@ namespace VacationManager.Auth.Helpers
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
 

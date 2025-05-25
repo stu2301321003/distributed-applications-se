@@ -1,80 +1,85 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using VacationManager.Auth.Models;
 using VacationManager.Companies.Models;
+using VacationManager.Companies.Services.Abstractions;
 
 namespace VacationManager.Companies.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class CompanyController : ControllerBase
     {
-        /// <summary>
-        /// Create a new company. Only accessible to users with the Developer role.
-        /// </summary>
+        private readonly ICompanyService _companyService;
+
+        public CompanyController(ICompanyService companyService)
+        {
+            _companyService = companyService;
+        }
+
         [HttpPost]
+        [Authorize(Roles = nameof(Roles.Dev))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public IActionResult CreateCompany([FromBody] CompanyCreateModel model)
+        public async Task<IActionResult> CreateCompany([FromBody] CompanyCreateModel model)
         {
-            // Developer only
-            return StatusCode(501); // Not implemented
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var ceoId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var company = await _companyService.CreateAsync(model, ceoId);
+            return CreatedAtAction(nameof(GetCompanyById), new { id = company.Id }, company);
         }
 
-        /// <summary>
-        /// Get a paginated, filtered, and sorted list of companies. Only accessible to CEOs.
-        /// </summary>
         [HttpGet]
+        [Authorize(Roles = nameof(Roles.CEO))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public IActionResult GetCompanies(
+        public async Task<IActionResult> GetCompanies(
             [FromQuery] string? name,
             [FromQuery] string? sortBy,
             [FromQuery] string? sortDir,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            // CEO only
-            return StatusCode(501);
+            var companies = await _companyService.GetAsync(name, sortBy, sortDir, page, pageSize);
+            return Ok(companies);
         }
 
-        /// <summary>
-        /// Get a company by ID. Only accessible to CEOs.
-        /// </summary>
         [HttpGet("{id:int}")]
+        [Authorize(Roles = nameof(Roles.CEO))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public IActionResult GetCompanyById(int id)
+        public async Task<IActionResult> GetCompanyById(int id)
         {
-            // CEO only
-            return StatusCode(501);
+            var company = await _companyService.GetByIdAsync(id);
+            return company == null ? NotFound() : Ok(company);
         }
 
-        /// <summary>
-        /// Update a company's information. Only accessible to CEOs.
-        /// </summary>
         [HttpPut]
+        [Authorize(Roles = nameof(Roles.CEO))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public IActionResult UpdateCompany([FromBody] CompanyUpdateModel model)
+        public async Task<IActionResult> UpdateCompany([FromBody] CompanyUpdateModel model)
         {
-            // CEO only
-            return StatusCode(501);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var success = await _companyService.UpdateAsync(model);
+            return success ? Ok() : NotFound();
         }
 
-        /// <summary>
-        /// Delete a company by ID. Only accessible to CEOs.
-        /// </summary>
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = nameof(Roles.CEO))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public IActionResult DeleteCompany(int id)
+        public async Task<IActionResult> DeleteCompany(int id)
         {
-            // CEO only
-            return StatusCode(501);
+            var success = await _companyService.DeleteAsync(id);
+            return success ? Ok() : NotFound();
         }
     }
+
 }

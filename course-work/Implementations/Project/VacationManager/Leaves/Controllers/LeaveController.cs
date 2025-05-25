@@ -1,31 +1,38 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using VacationManager.Auth.Models;
 using VacationManager.Commons.Enums;
 using VacationManager.Leaves.Models;
+using VacationManager.Leaves.Services.Abstractions;
 
 namespace VacationManager.Leaves.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class LeavesController : ControllerBase
+    public class LeavesController(ILeaveService leavesService) : ControllerBase
     {
+
         /// <summary>
         /// Create a new leave. Allowed roles: Manager, Employee
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = $"{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult CreateLeave([FromBody] LeaveCreateModel model)
         {
-            return StatusCode(501); // Not implemented
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var createdLeave = leavesService.CreateAsync(model);
+            return CreatedAtAction(nameof(GetLeaveById), new { id = createdLeave.Id }, createdLeave);
         }
 
         /// <summary>
-        /// Get a paginated, filtered, and sorted list of leaves.
-        /// Filtering by UserId and Type possible. Allowed roles: CEO, Manager
+        /// Get a paginated, filtered, and sorted list of leaves. Filtering by UserId and Type possible. Allowed roles: CEO, Manager
         /// </summary>
         [HttpGet]
+        [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult GetLeaves(
+        public async Task<IActionResult> GetLeaves(
             [FromQuery] int? userId,
             [FromQuery] LeaveType? type,
             [FromQuery] string? sortBy,
@@ -33,65 +40,81 @@ namespace VacationManager.Leaves.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            return StatusCode(501);
+            var leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
+            return Ok(leaves);
         }
 
         /// <summary>
         /// Get a leave by ID. Allowed roles: CEO, Manager, Employee
         /// </summary>
         [HttpGet("{id:int}")]
+        [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public IActionResult GetLeaveById(int id)
         {
-            return StatusCode(501);
+            var leave = leavesService.GetByIdAsync(id);
+            return leave == null ? NotFound() : Ok(leave);
         }
 
         /// <summary>
         /// Update a leave. Allowed roles: Manager, Employee
         /// </summary>
         [HttpPut]
+        [Authorize(Roles = $"{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult UpdateLeave([FromBody] LeaveUpdateModel model)
+        public async Task<IActionResult> UpdateLeave([FromBody] LeaveUpdateModel model)
         {
-            return StatusCode(501);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var success = await leavesService.UpdateAsync(model);
+            return success ? Ok() : NotFound();
         }
 
         /// <summary>
         /// Approves a leave. Allowed roles: CEO, Manager
         /// </summary>
         [HttpPut("approve/{id:int}")]
+        [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult ApproveLeave([FromRoute] int id)
+        public async Task<IActionResult> ApproveLeave([FromRoute] int id)
         {
-            return StatusCode(501);
+            var success = await leavesService.ApproveAsync(id);
+            return success ? Ok() : NotFound();
         }
 
         /// <summary>
-        /// Rejects a leave.Allowed roles: CEO, Manager
+        /// Rejects a leave. Allowed roles: CEO, Manager
         /// </summary>
         [HttpPut("reject/{id:int}")]
+        [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult RejectLeave([FromRoute] int id)
+        public async Task<IActionResult> RejectLeave([FromRoute] int id, [FromQuery] string message)
         {
-            return StatusCode(501);
+            if (string.IsNullOrWhiteSpace(message))
+                return BadRequest("Rejection message is required.");
+
+            var success = await leavesService.RejectAsync(id, message);
+            return success ? Ok() : NotFound();
         }
 
         /// <summary>
         /// Delete a leave by ID. Allowed roles: Manager, Employee
         /// </summary>
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = $"{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult DeleteLeave(int id)
+        public async Task<IActionResult> DeleteLeave(int id)
         {
-            return StatusCode(501);
+            var success = await leavesService.DeleteAsync(id);
+            return success ? Ok() : NotFound();
         }
     }
 }

@@ -40,7 +40,7 @@ namespace VacationManager.Users.Services.Implementations
 
         public async Task<bool> UpdateUserAsync(User user)
         {
-            var existingUser = await context.Users.FindAsync(user.Id);
+            User? existingUser = await context.Users.FindAsync(user.Id);
             if (existingUser == null)
                 return false;
 
@@ -57,12 +57,12 @@ namespace VacationManager.Users.Services.Implementations
 
         public async Task<bool> VerifyUserAsync(VerifyUserModel verifyUser)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Email == verifyUser.Email);
+            User? user = await context.Users.FirstOrDefaultAsync(u => u.Email == verifyUser.Email);
             if (user == null)
                 return false;
 
             user.PhoneNumber = verifyUser.PhoneNumber;
-            user.Role = verifyUser.Role;
+            user.Role = Roles.Employee;
             user.TeamId = verifyUser.TeamId;
 
             context.Users.Update(user);
@@ -72,11 +72,11 @@ namespace VacationManager.Users.Services.Implementations
 
         public async Task<bool> RejectUserAsync(int userId)
         {
-            var user = await context.Users.FindAsync(userId);
+            User? user = await context.Users.FindAsync(userId);
             if (user == null)
                 return false;
 
-            user.Role = Roles.None;
+            user.Role = Roles.Unverified;
             user.TeamId = null;
 
             context.Users.Update(user);
@@ -86,7 +86,7 @@ namespace VacationManager.Users.Services.Implementations
 
         public async Task<bool> DeleteUserAsync(int userId)
         {
-            var user = await context.Users.FindAsync(userId);
+            User? user = await context.Users.FindAsync(userId);
             if (user == null)
                 return false;
 

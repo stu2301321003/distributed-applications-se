@@ -2,9 +2,10 @@
 {
     public enum Roles
     {
-        None,
+        Unverified,
         CEO,
         Manager,
-        Employee
+        Employee,
+        Dev
     }
 }

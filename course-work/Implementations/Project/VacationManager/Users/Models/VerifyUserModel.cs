@@ -11,7 +11,6 @@ namespace VacationManager.Users.Models
         [Phone, Length(5, 20)]
         public string PhoneNumber { get; set; } = null!;
 
-        public Roles Role { get; set; }
         public int? TeamId { get; set; }
     }
 }
