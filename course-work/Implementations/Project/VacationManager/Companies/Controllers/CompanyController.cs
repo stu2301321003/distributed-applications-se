@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+using VacationManager.Companies.Models;
 
-namespace VacationManager.Controllers
+namespace VacationManager.Companies.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class CompanyController:ControllerBase
+    public class CompanyController : ControllerBase
     {
         /// <summary>
         /// Create a new company. Only accessible to users with the Developer role.
@@ -77,28 +77,4 @@ namespace VacationManager.Controllers
             return StatusCode(501);
         }
     }
-
-    public class CompanyCreateModel
-    {
-        [Required, StringLength(35, MinimumLength = 2)]
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class CompanyUpdateModel
-    {
-        [Required]
-        public int Id { get; set; }
-
-        [Required, StringLength(35, MinimumLength = 2)]
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class CompanyReadModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int CeoId { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-
 }

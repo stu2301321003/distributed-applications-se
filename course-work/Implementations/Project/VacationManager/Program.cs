@@ -3,6 +3,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Text;
 using VacationManager.Database;
+using VacationManager.Users.Services.Abstractions;
+using VacationManager.Users.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,38 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+
+    // Define the security scheme
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = @"JWT Authorization header using the Bearer scheme.
+                        Enter 'Bearer' [space] and then your token in the text input below.
+                        Example: 'Bearer abc123token'",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    // Require the bearer token globally (optional, remove if not global)
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement()
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+
+            },
+            new List<string>()
+        }
+    });
 });
 
 builder.Services.Configure<ConnectionStrings>(
@@ -24,7 +58,7 @@ builder.Services.Configure<ConnectionStrings>(
 );
 
 builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings")
+    builder.Configuration.GetSection("JwtAuth")
 );
 
 builder.Services.AddAuthentication(options =>
@@ -53,6 +87,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<AppDbContext>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
@@ -65,6 +100,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();   // MUST be before UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();

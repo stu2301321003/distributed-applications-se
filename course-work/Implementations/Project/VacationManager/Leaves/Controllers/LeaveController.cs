@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+using VacationManager.Commons.Enums;
+using VacationManager.Leaves.Models;
 
-namespace VacationManager.Controllers
+namespace VacationManager.Leaves.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -93,49 +94,4 @@ namespace VacationManager.Controllers
             return StatusCode(501);
         }
     }
-
-
-    public class LeaveCreateModel
-    {
-        [Required]
-        public DateTime From { get; set; }
-
-        [Required]
-        public DateTime To { get; set; }
-
-        [Required]
-        public int UserId { get; set; }
-
-        [Required]
-        public LeaveType Type { get; set; }
-    }
-
-    public class LeaveUpdateModel
-    {
-        [Required]
-        public int Id { get; set; }
-
-        [Required]
-        public DateTime From { get; set; }
-
-        [Required]
-        public DateTime To { get; set; }
-
-        [Required]
-        public int UserId { get; set; }
-
-        [Required]
-        public LeaveType Type { get; set; }
-    }
-
-    public class LeaveReadModel
-    {
-        public int Id { get; set; }
-        public DateTime From { get; set; }
-        public DateTime To { get; set; }
-        public int UserId { get; set; }
-        public LeaveType Type { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-
 }

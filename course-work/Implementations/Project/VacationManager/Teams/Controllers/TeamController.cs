@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+using VacationManager.Teams.Models;
 
-namespace VacationManager.Controllers
+namespace VacationManager.Teams.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -67,35 +67,4 @@ namespace VacationManager.Controllers
             return StatusCode(501);
         }
     }
-
-
-    public class TeamCreateModel
-    {
-        [Required, StringLength(35, MinimumLength = 2)]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public int ManagerId { get; set; }
-    }
-
-    public class TeamUpdateModel
-    {
-        [Required]
-        public int Id { get; set; }
-
-        [Required, StringLength(35, MinimumLength = 2)]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public int ManagerId { get; set; }
-    }
-
-    public class TeamReadModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int ManagerId { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-
 }
