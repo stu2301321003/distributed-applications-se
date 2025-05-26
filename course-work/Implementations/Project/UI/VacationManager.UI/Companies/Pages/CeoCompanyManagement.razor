@@ -6,7 +6,8 @@
 @inject IApiService ApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject AuthenticationStateProvider AuthProvider
+@inject JwtAuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
 
 <AuthorizeView Roles="CEO">
     <Authorized>
@@ -35,8 +36,8 @@
         {
             <RadzenCard Style="width: 400px;">
                 <h3>@company.Name</h3>
-                <p>Employees: @company.Teams.Select(t => t.Users.Count).Sum()</p>
-                <RadzenButton Text="Manage" ButtonStyle="ButtonStyle.Info" Style="margin-right: 1em;" />
+                <p>Employees: @company.Teams.Select(t => t.Employees.Count).Sum()</p>
+                <RadzenButton Text="Manage" ButtonStyle="ButtonStyle.Info" Click="ManageCompany" Style="margin-right: 1em;" />
                 <RadzenButton Text="Delete" ButtonStyle="ButtonStyle.Danger" Click="@ConfirmDeleteCompany" />
             </RadzenCard>
         }
@@ -59,7 +60,7 @@
 
         if (user.Identity is not null && user.Identity.IsAuthenticated)
         {
-            ceoId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+            ceoId = await AuthProvider.GetUserIdAsync() ?? 0;
             await LoadCompany();
         }
     }
@@ -67,7 +68,7 @@
     private async Task LoadCompany()
     {
         loading = true;
-        var result = await ApiService.GetAsync<Company>($"api/Company/company-by-ceo-id/{ceoId}");
+        var result = await ApiService.GetAsync<Company>($"Company/company-by-ceo-id/{ceoId}");
         if (result.IsSuccess)
         {
             company = result.Data;
@@ -83,7 +84,7 @@
     private async Task CreateCompany()
     {
         newCompany.CeoId = ceoId; // Set CEO ID before sending
-        var result = await ApiService.PostAsync<CompanyCreateModel, Company>("api/Company", newCompany);
+        var result = await ApiService.PostAsync<CompanyCreateModel, Company>("Company", newCompany);
 
         if (result.IsSuccess)
         {
@@ -101,7 +102,7 @@
         bool? confirmed = await DialogService.Confirm("Are you sure you want to delete this company?", "Confirm Delete");
         if (confirmed == true && company is not null)
         {
-            var result = await ApiService.DeleteAsync($"api/Company/{company.Id}");
+            var result = await ApiService.DeleteAsync($"Company/{company.Id}");
             if (result.IsSuccess)
             {
                 NotificationService.Notify(NotificationSeverity.Success, "Deleted", "Company deleted");
@@ -112,5 +113,10 @@
                 NotificationService.Notify(NotificationSeverity.Error, "Error", "Could not delete company");
             }
         }
+    }
+
+    private async Task ManageCompany()
+    {
+        NavigationManager.NavigateTo("ceo/company/manage");
     }
 }

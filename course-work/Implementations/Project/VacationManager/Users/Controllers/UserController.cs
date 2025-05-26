@@ -138,7 +138,7 @@ namespace VacationManager.Users.Controllers
         /// </summary>
         [HttpPost("create/ceo")]
         [Authorize(Roles = nameof(Roles.Dev))]
-        public async Task<IActionResult> Register([FromBody] int userId)
+        public async Task<IActionResult> MakeCeo([FromBody] int userId)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -150,7 +150,7 @@ namespace VacationManager.Users.Controllers
             existingUser.Role = Roles.CEO;
             await userService.UpdateUserAsync(existingUser);
 
-            return Ok("CEO added successfully");
+            return Ok();
         }
 
         [HttpPost("unverified")]

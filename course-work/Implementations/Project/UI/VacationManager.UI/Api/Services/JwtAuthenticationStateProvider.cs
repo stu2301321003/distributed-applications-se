@@ -103,4 +103,29 @@ public class JwtAuthenticationStateProvider(ILocalStorageService localStorage) :
             return null;
         }
     }
+    public async Task<int?> GetUserIdAsync()
+    {
+        var token = await localStorage.GetItemAsStringAsync("authToken");
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        token = token.Trim('\"');
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(token))
+            return null;
+
+        try
+        {
+            var jwt = handler.ReadJwtToken(token);
+            if (jwt.Payload.TryGetValue("nameid", out var id) && int.TryParse((string)id, out int idInt))
+            {
+                return idInt;
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

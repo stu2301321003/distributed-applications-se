@@ -8,7 +8,7 @@ using VacationManager.Companies.Services.Abstractions;
 namespace VacationManager.Companies.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class CompanyController(ICompanyService companyService) : ControllerBase
     {
         [HttpPost]
@@ -86,7 +86,7 @@ namespace VacationManager.Companies.Controllers
         [HttpGet("company-by-ceo-id/{ceoId:int}")]
         public async Task<IActionResult> GetCompanyByCeoId([FromRoute] int ceoId)
         {
-            Entities.Company? company = await companyService.GetByIdAsync(ceoId);
+            Entities.Company? company = await companyService.GetByCeoIdAsync(ceoId);
             return company == null ? NotFound() : Ok(company);
         }
     }

@@ -1,0 +1,164 @@
+﻿@page "/ceo/team/manage/{teamId:int}"
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Teams.Models
+@using VacationManager.UI.Users.Models
+@using System.ComponentModel.DataAnnotations
+@inject IApiService ApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject NavigationManager Navigation
+
+<h3>Manage Team: @team?.Name</h3>
+
+@if (loading)
+{
+    <p>Loading...</p>
+}
+else if (team != null)
+{
+    <EditForm Model="@team" OnValidSubmit="@UpdateTeamName">
+        <div class="mb-2">
+            <label>Team Name:</label>
+            <RadzenTextBox @bind-Value="team.Name" Style="width: 300px;" />
+        </div>
+        <RadzenButton Text="Rename Team" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
+    </EditForm>
+
+    <RadzenDataGrid Data="@team.Employees" TItem="User" RowSelect="@((User u) => selectedUser = u)" AllowFiltering="true" AllowSorting="true" ShowPagingSummary="true" PageSize="10">
+        <Columns>
+            <RadzenDataGridColumn TItem="User" Property="Name" Title="Name" />
+            <RadzenDataGridColumn TItem="User" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="User" Title="Actions">
+                <Template Context="user">
+                    <RadzenButton Text="Remove" ButtonStyle="ButtonStyle.Danger" Click="@(() => RemoveUser(user.Id))" />
+                    <RadzenButton Text="Make Manager" ButtonStyle="ButtonStyle.Secondary" Click="@(() => SetManager(user.Id))" Disabled="@((team.ManagerId == user.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+
+    <br />
+    <h4>Add Employee by Email</h4>
+    <EditForm Model="@addModel" OnValidSubmit="AddUserByEmail">
+        <div class="mb-2">
+            <RadzenTextBox @bind-Value="addModel.Email" Placeholder="Enter employee email" Style="width: 300px;" />
+        </div>
+        <RadzenButton Text="Add" ButtonStyle="ButtonStyle.Success" ButtonType="ButtonType.Submit" />
+    </EditForm>
+}
+else
+{
+    <p>Team not found.</p>
+}
+
+@code {
+    [Parameter] public int teamId { get; set; }
+
+    bool loading = true;
+    Team? team;
+    User? selectedUser;
+
+    AddUserModel addModel = new();
+
+    class AddUserModel
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTeam();
+    }
+
+    private async Task LoadTeam()
+    {
+        loading = true;
+        var result = await ApiService.GetAsync<Team>($"api/Teams/{teamId}");
+        if (result.IsSuccess)
+            team = result.Data;
+        else
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to load team");
+        loading = false;
+    }
+
+    private async Task UpdateTeamName()
+    {
+        var updateModel = new TeamUpdateModel
+            {
+                Id = team!.Id,
+                Name = team.Name,
+            };
+
+        var result = await ApiService.PutAsync<TeamUpdateModel, TeamUpdateModel>("api/Teams", updateModel);
+        if (result.IsSuccess)
+            NotificationService.Notify(NotificationSeverity.Success, "Updated", "Team renamed successfully");
+        else
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to update team");
+    }
+
+    private async Task AddUserByEmail()
+    {
+        var result = await ApiService.PostAsync<object, Team>("api/Teams/AddUser", new AddUserToTeamRequest
+        {
+            TeamId = teamId,
+            Email = addModel.Email
+        });
+
+        if (result.IsSuccess)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Added", "User added");
+            addModel.Email = string.Empty;
+            await LoadTeam();
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", result.ErrorMessage ?? "Failed to add user");
+        }
+    }
+
+    private async Task RemoveUser(int userId)
+    {
+        bool? confirmed = await DialogService.Confirm("Are you sure you want to remove this user from the team?", "Confirm");
+        if (confirmed == true)
+        {
+            var result = await ApiService.DeleteAsync($"api/Teams/{teamId}/remove-user/{userId}");
+            if (result.IsSuccess)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Removed", "User removed");
+                await LoadTeam();
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove user");
+            }
+        }
+    }
+
+    private async Task SetManager(int userId)
+    {
+        var result = await ApiService.PutAsync<object, TeamUpdateModel>($"api/Teams/{teamId}/set-manager/{userId}", null);
+        if (result.IsSuccess)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Updated", "Manager set");
+            await LoadTeam();
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to set manager");
+        }
+    }
+
+    public class TeamUpdateResponseModel
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class AddUserToTeamRequest
+    {
+        public int TeamId { get; set; }
+        public string Email { get; set; } = string.Empty;
+    }
+
+}

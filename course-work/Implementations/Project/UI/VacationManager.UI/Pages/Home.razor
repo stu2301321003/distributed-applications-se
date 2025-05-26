@@ -26,7 +26,7 @@
 </RadzenDataGrid>
 
 @code {
-    IEnumerable<CompanyReadModel> companies = new List<CompanyReadModel>();
+    IEnumerable<CompanyReadModel> companies;
     int totalCount = 0;
 
     private async Task LoadData(LoadDataArgs args)
@@ -38,7 +38,7 @@
         var page = (args.Skip / args.Top) + 1;
         var pageSize = args.Top;
 
-        var endpoint = $"companies/all?sortBy={sortBy}&sortDir={sortDir}&page={page}&pageSize={pageSize}";
+        var endpoint = $"Company/all?sortBy={sortBy}&sortDir={sortDir}&page={page}&pageSize={pageSize}";
         var response = await ApiService.GetAsync<PagedResult<CompanyReadModel>>(endpoint);
 
         if (response.IsSuccess && response.Data != null)

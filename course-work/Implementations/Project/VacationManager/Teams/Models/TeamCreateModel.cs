@@ -8,6 +8,6 @@ namespace VacationManager.Teams.Models
         public string Name { get; set; } = string.Empty;
 
         [Required]
-        public int ManagerId { get; set; }
+        public int CompanyId { get; set; }
     }
 }

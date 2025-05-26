@@ -14,7 +14,7 @@ namespace VacationManager.Companies.Entities
         public List<Team> Teams { get; set; } = [];
 
         public int CeoId { get; set; }
-        public User Ceo { get; set; } = new();
+        public User Ceo { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
     }
 }

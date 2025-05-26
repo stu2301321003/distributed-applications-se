@@ -1,0 +1,124 @@
+﻿@page "/ceo/company/manage"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using VacationManager.Teams.UI.Models
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Teams.Models
+@using VacationManager.UI.Companies.Models
+@inject IApiService ApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject JwtAuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
+
+<h2>@company?.Name</h2>
+
+@if (loading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach (var team in teams)
+    {
+        <RadzenCard Style="margin-bottom: 1em;">
+            <h4>@team.Name</h4>
+            <p>Employees: @(team.Employees?.Count ?? 0)</p>
+            <p>Manager: @(team.Manager == null ? "N/A" : $"{team.Manager.Name} {team.Manager.LastName}")</p>
+
+            <RadzenButton Text="Manage" ButtonStyle="ButtonStyle.Info" Click="() => ManageCompany(team.Id)" Style="margin-right: 1em;" />
+            <RadzenButton Text="Delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => ConfirmDeleteTeam(team.Id))" />
+        </RadzenCard>
+    }
+
+    <hr />
+    <h4>Add New Team</h4>
+    <EditForm Model="@newTeam" OnValidSubmit="CreateTeam">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Team Name</label>
+            <RadzenTextBox @bind-Value="newTeam.Name" Style="width: 300px;" />
+        </div>
+
+        <RadzenButton Text="Add Team" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+    </EditForm>
+}
+
+@code {
+    bool loading = true;
+    Company? company;
+    List<Team> teams = new();
+    TeamCreateModel newTeam = new();
+    int ceoId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ceoId = await AuthProvider.GetUserIdAsync() ?? 0;
+
+        await LoadCompanyAndTeams();
+    }
+
+    private async Task LoadCompanyAndTeams()
+    {
+        loading = true;
+
+        var companyResult = await ApiService.GetAsync<Company>($"Company/company-by-ceo-id/{ceoId}");
+        if (companyResult.IsSuccess)
+        {
+            company = companyResult.Data!;
+            newTeam.CompanyId = company.Id;
+
+            var teamResult = await ApiService.GetAsync<List<Team>>("api/Teams");
+            if (teamResult.IsSuccess)
+                teams = teamResult.Data!;
+        }
+
+        StateHasChanged();
+
+        loading = false;
+    }
+
+    private async Task CreateTeam()
+    {
+        var result = await ApiService.PostAsync<TeamCreateModel, Team>("api/Teams", newTeam);
+
+        if (result.IsSuccess)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Created", "Team created successfully");
+            newTeam = new TeamCreateModel { CompanyId = company!.Id }; // reset form
+            await LoadCompanyAndTeams();
+            StateHasChanged();
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", result.ErrorMessage ?? "Failed to create team");
+        }
+    }
+
+    private async Task ConfirmDeleteTeam(int id)
+    {
+        bool? confirmed = await DialogService.Confirm("Are you sure you want to delete this team?", "Confirm Delete");
+
+        if (confirmed == true)
+        {
+            var result = await ApiService.DeleteAsync($"api/Teams/{id}");
+            if (result.IsSuccess)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Deleted", "Team deleted");
+                await LoadCompanyAndTeams();
+                StateHasChanged();
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "Could not delete team");
+            }
+        }
+    }
+
+    private async Task ManageCompany(int teamId)
+    {
+        NavigationManager.NavigateTo($"ceo/team/manage/{teamId}");
+    }
+}

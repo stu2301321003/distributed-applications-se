@@ -42,7 +42,7 @@ namespace VacationManager.Database
             // Each User can optionally be assigned to a Team (membership)
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Team)
-                .WithMany(t => t.Users)
+                .WithMany(t => t.Employees)
                 .HasForeignKey(u => u.TeamId);
         }
 

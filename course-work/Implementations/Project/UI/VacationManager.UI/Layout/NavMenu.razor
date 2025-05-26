@@ -7,21 +7,27 @@
 
 <AuthorizeView>
     <Authorized>
-        <NavLink href="/dashboard">Начало</NavLink>
+        <NavLink href="/dashboard">Home</NavLink>
         <RequireRole Role="CEO">
-            <NavLink href="/companies">Компании</NavLink>
+            <NavLink href="/ceo/company">My company</NavLink>
         </RequireRole>
         <RequireRole Role="Manager">
-            <NavLink href="/leaves">Отпуски</NavLink>
+            <NavLink href="/leaves">Leave Requests</NavLink>
         </RequireRole>
         <RequireRole Role="Employee">
-            <NavLink href="/my-leaves">Моите отпуски</NavLink>
+            <NavLink href="/my-leaves">My Leaves</NavLink>
         </RequireRole>
-        <Logout></Logout>
+        <RequireRole Role="Dev">
+            <NavLink href="/admin/unverified-users">Моите отпуски</NavLink>
+        </RequireRole>
+
+        <div class="mb-0">
+            <Logout></Logout>
+        </div>
     </Authorized>
     <NotAuthorized>
-        <NavLink href="/login">Вход</NavLink>
-        <NavLink href="/register">Регистрация</NavLink>
+        <NavLink href="/login">Login</NavLink>
+        <NavLink href="/register">Register</NavLink>
     </NotAuthorized>
 </AuthorizeView>
 @* <div class="top-row ps-3 navbar navbar-dark">
