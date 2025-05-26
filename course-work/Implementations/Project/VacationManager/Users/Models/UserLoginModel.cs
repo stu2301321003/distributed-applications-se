@@ -1,4 +1,4 @@
-﻿namespace VacationManager.Auth.Models
+﻿namespace VacationManager.Users.Models
 {
     public class UserLoginModel
     {

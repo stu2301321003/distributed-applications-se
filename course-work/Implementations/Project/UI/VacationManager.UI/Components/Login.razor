@@ -1,0 +1,62 @@
+﻿@page "/login"
+
+@using Blazored.LocalStorage
+@using VacationManager.UI.Api.Models
+@using VacationManager.UI.Api.Services
+@using VacationManager.UI.Api.Services.Abstractions
+
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+@inject IApiService ApiService
+@inject JwtAuthenticationStateProvider AuthProvider
+
+<h3>Вход</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p class="text-danger">@ErrorMessage</p>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="loginModel.Username" />
+    </div>
+
+    <div class="mb-3">
+        <label>Парола</label>
+        <InputText class="form-control" @bind-Value="loginModel.Password" type="password" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Вход</button>
+</EditForm>
+
+@code {
+    private UserLoginModel loginModel = new();
+    private string? ErrorMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var response = await ApiService.PostAsync<UserLoginModel, LoginResponse>("Auth/login", loginModel);
+            if (!response.IsSuccess)
+            {
+                ErrorMessage = "Невалиден отговор от сървъра.";
+            }
+            else if (!string.IsNullOrWhiteSpace(response?.Data?.Token))
+            {
+                await LocalStorage.SetItemAsync("authToken", response.Data.Token);
+                AuthProvider.NotifyUserAuthentication(response.Data.Token);
+                Navigation.NavigateTo("/", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+}

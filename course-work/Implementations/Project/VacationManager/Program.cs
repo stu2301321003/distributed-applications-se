@@ -59,13 +59,26 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.Configure<ConnectionStrings>(
-    builder.Configuration.GetSection("ConnectionStrings")
-);
+var connectionStrings = builder.Configuration
+    .GetSection("DataBase")
+    .Get<DataBaseSettings>();
+
+builder.Services.AddSingleton(connectionStrings);
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtAuth")
 );
+
+// В Program.cs (или Startup.cs)
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.SetIsOriginAllowed(_ => true) // смени с URL на фронтенда
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -107,9 +120,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (connectionStrings?.UseInMemory ?? false)
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await InMemoryDbSeeder.Seed(dbContext);
+}
 
-app.UseAuthentication();   // MUST be before UseAuthorization
+app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

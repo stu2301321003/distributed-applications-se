@@ -45,7 +45,7 @@ namespace VacationManager.Teams.Services.Implementations
                 _ => query.OrderBy(t => t.Id)
             };
 
-            var teams = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            List<Team> teams = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
             return teams.Select(t => new TeamReadModel
             {

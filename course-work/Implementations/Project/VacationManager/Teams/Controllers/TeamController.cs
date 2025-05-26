@@ -19,7 +19,7 @@ namespace VacationManager.Teams.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var team = await teamService.CreateTeamAsync(model);
+            TeamReadModel team = await teamService.CreateTeamAsync(model);
             return CreatedAtAction(nameof(GetTeamById), new { id = team.Id }, team);
         }
 
@@ -28,7 +28,7 @@ namespace VacationManager.Teams.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTeams([FromQuery] string? name, [FromQuery] string? sortBy, [FromQuery] string? sortDir, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var teams = await teamService.GetTeamsAsync(name, sortBy, sortDir, page, pageSize);
+            List<TeamReadModel> teams = await teamService.GetTeamsAsync(name, sortBy, sortDir, page, pageSize);
             return Ok(teams);
         }
 
@@ -38,7 +38,7 @@ namespace VacationManager.Teams.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTeamById(int id)
         {
-            var team = await teamService.GetTeamByIdAsync(id);
+            TeamReadModel? team = await teamService.GetTeamByIdAsync(id);
             if (team == null)
                 return NotFound();
             return Ok(team);
@@ -54,7 +54,7 @@ namespace VacationManager.Teams.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await teamService.UpdateTeamAsync(model);
+            bool updated = await teamService.UpdateTeamAsync(model);
             if (!updated)
                 return NotFound();
 
@@ -67,7 +67,7 @@ namespace VacationManager.Teams.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTeam(int id)
         {
-            var deleted = await teamService.DeleteTeamAsync(id);
+            bool deleted = await teamService.DeleteTeamAsync(id);
             if (!deleted)
                 return NotFound();
 

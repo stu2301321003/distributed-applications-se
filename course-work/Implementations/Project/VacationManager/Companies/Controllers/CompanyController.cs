@@ -26,8 +26,8 @@ namespace VacationManager.Companies.Controllers
         public async Task<IActionResult> CreateCompany([FromBody] CompanyCreateModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var ceoId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var company = await _companyService.CreateAsync(model, ceoId);
+            int ceoId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            Entities.Company? company = await _companyService.CreateAsync(model, ceoId);
             return CreatedAtAction(nameof(GetCompanyById), new { id = company.Id }, company);
         }
 
@@ -42,7 +42,7 @@ namespace VacationManager.Companies.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var companies = await _companyService.GetAsync(name, sortBy, sortDir, page, pageSize);
+            List<CompanyReadModel> companies = await _companyService.GetAsync(name, sortBy, sortDir, page, pageSize);
             return Ok(companies);
         }
 
@@ -53,7 +53,7 @@ namespace VacationManager.Companies.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetCompanyById(int id)
         {
-            var company = await _companyService.GetByIdAsync(id);
+            Entities.Company? company = await _companyService.GetByIdAsync(id);
             return company == null ? NotFound() : Ok(company);
         }
 
@@ -66,7 +66,7 @@ namespace VacationManager.Companies.Controllers
         public async Task<IActionResult> UpdateCompany([FromBody] CompanyUpdateModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var success = await _companyService.UpdateAsync(model);
+            bool success = await _companyService.UpdateAsync(model);
             return success ? Ok() : NotFound();
         }
 
@@ -77,7 +77,7 @@ namespace VacationManager.Companies.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteCompany(int id)
         {
-            var success = await _companyService.DeleteAsync(id);
+            bool success = await _companyService.DeleteAsync(id);
             return success ? Ok() : NotFound();
         }
     }

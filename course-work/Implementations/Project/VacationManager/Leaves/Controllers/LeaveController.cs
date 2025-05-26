@@ -22,7 +22,7 @@ namespace VacationManager.Leaves.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var createdLeave = leavesService.CreateAsync(model);
+            Task<LeaveReadModel> createdLeave = leavesService.CreateAsync(model);
             return CreatedAtAction(nameof(GetLeaveById), new { id = createdLeave.Id }, createdLeave);
         }
 
@@ -40,7 +40,7 @@ namespace VacationManager.Leaves.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
+            List<LeaveReadModel> leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
             return Ok(leaves);
         }
 
@@ -53,7 +53,7 @@ namespace VacationManager.Leaves.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public IActionResult GetLeaveById(int id)
         {
-            var leave = leavesService.GetByIdAsync(id);
+            Task<LeaveReadModel?> leave = leavesService.GetByIdAsync(id);
             return leave == null ? NotFound() : Ok(leave);
         }
 
@@ -70,7 +70,7 @@ namespace VacationManager.Leaves.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var success = await leavesService.UpdateAsync(model);
+            bool success = await leavesService.UpdateAsync(model);
             return success ? Ok() : NotFound();
         }
 
@@ -83,7 +83,7 @@ namespace VacationManager.Leaves.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ApproveLeave([FromRoute] int id)
         {
-            var success = await leavesService.ApproveAsync(id);
+            bool success = await leavesService.ApproveAsync(id);
             return success ? Ok() : NotFound();
         }
 
@@ -100,7 +100,7 @@ namespace VacationManager.Leaves.Controllers
             if (string.IsNullOrWhiteSpace(message))
                 return BadRequest("Rejection message is required.");
 
-            var success = await leavesService.RejectAsync(id, message);
+            bool success = await leavesService.RejectAsync(id, message);
             return success ? Ok() : NotFound();
         }
 
@@ -113,7 +113,7 @@ namespace VacationManager.Leaves.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteLeave(int id)
         {
-            var success = await leavesService.DeleteAsync(id);
+            bool success = await leavesService.DeleteAsync(id);
             return success ? Ok() : NotFound();
         }
     }

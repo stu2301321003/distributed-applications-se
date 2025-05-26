@@ -7,14 +7,11 @@ using VacationManager.Leaves.Services.Abstractions;
 
 namespace VacationManager.Leaves.Services.Implementations
 {
-    public class LeaveService : ILeaveService
+    public class LeaveService(AppDbContext context) : ILeaveService
     {
-        private readonly AppDbContext _context;
-        public LeaveService(AppDbContext context) => _context = context;
-
         public async Task<LeaveReadModel> CreateAsync(LeaveCreateModel model)
         {
-            var leave = new Leave
+            Leave leave = new()
             {
                 From = model.From,
                 To = model.To,
@@ -23,22 +20,28 @@ namespace VacationManager.Leaves.Services.Implementations
                 Description = model.Description,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Leaves.Add(leave);
-            await _context.SaveChangesAsync();
+
+            context.Leaves.Add(leave);
+            await context.SaveChangesAsync();
             return MapToReadModel(leave);
         }
 
         public async Task<List<LeaveReadModel>> GetAsync(int? userId, LeaveType? type, string? sortBy, string? sortDir, int page, int pageSize)
         {
-            var query = _context.Leaves.AsQueryable();
-            if (userId.HasValue) query = query.Where(l => l.UserId == userId);
-            if (type.HasValue) query = query.Where(l => l.Type == type);
+            IQueryable<Leave> query = context.Leaves.AsQueryable();
+            if (userId.HasValue)
+                query = query.Where(l => l.UserId == userId);
+            
+            if (type.HasValue)
+                query = query.Where(l => l.Type == type);
+            
             if (!string.IsNullOrEmpty(sortBy))
             {
                 query = sortDir == "desc"
                     ? query.OrderByDescending(e => EF.Property<object>(e, sortBy))
                     : query.OrderBy(e => EF.Property<object>(e, sortBy));
             }
+
             return (await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -49,49 +52,49 @@ namespace VacationManager.Leaves.Services.Implementations
 
         public async Task<LeaveReadModel?> GetByIdAsync(int id)
         {
-            var leave = await _context.Leaves.FindAsync(id);
+            Leave? leave = await context.Leaves.FindAsync(id);
             return leave == null ? null : MapToReadModel(leave);
         }
 
         public async Task<bool> UpdateAsync(LeaveUpdateModel model)
         {
-            var leave = await _context.Leaves.FindAsync(model.Id);
+            Leave? leave = await context.Leaves.FindAsync(model.Id);
             if (leave == null) return false;
             leave.From = model.From;
             leave.To = model.To;
             leave.UserId = model.UserId;
             leave.Type = model.Type;
             leave.Description = model.Description;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ApproveAsync(int id)
         {
-            var leave = await _context.Leaves.FindAsync(id);
+            Leave? leave = await context.Leaves.FindAsync(id);
             if (leave == null) return false;
             leave.IsAccepted = true;
             leave.ResponseMessage = null;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> RejectAsync(int id, string reason)
         {
-            var leave = await _context.Leaves.FindAsync(id);
+            Leave? leave = await context.Leaves.FindAsync(id);
             if (leave == null) return false;
             leave.IsAccepted = false;
             leave.ResponseMessage = reason;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var leave = await _context.Leaves.FindAsync(id);
+            Leave? leave = await context.Leaves.FindAsync(id);
             if (leave == null) return false;
-            _context.Leaves.Remove(leave);
-            await _context.SaveChangesAsync();
+            context.Leaves.Remove(leave);
+            await context.SaveChangesAsync();
             return true;
         }
 

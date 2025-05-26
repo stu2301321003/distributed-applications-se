@@ -1,0 +1,69 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using VacationManager.UI.Api.Services.Abstractions
+
+@inject IApiService ApiService
+@inject NavigationManager Nav
+
+<h3>Регистрация</h3>
+
+<EditForm Model="@model" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText @bind-Value="model.Name" placeholder="Име" class="form-control" />
+    <InputText @bind-Value="model.LastName" placeholder="Фамилия" class="form-control" />
+    <InputText @bind-Value="model.Email" placeholder="Email" class="form-control" />
+    <InputText @bind-Value="model.PhoneNumber" placeholder="Телефон" class="form-control" />
+    <InputText @bind-Value="model.Password" type="password" placeholder="Парола" class="form-control" />
+
+    <button class="btn btn-primary">Регистрация</button>
+</EditForm>
+
+@code {
+    private RegisterRequestModel model = new();
+
+    private string? errorMessage;
+
+    private async Task HandleRegister()
+    {
+        errorMessage = null; // изчистваме предишните грешки
+        var result = await ApiService.PostAsync<RegisterRequestModel, RegisterResponseModel>("auth/register", model);
+
+        if (result != null && result.IsSuccess)
+        {
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = result?.Data?.Message ?? "Registration failed due to unknown error.";
+        }
+    }
+
+
+    // Модел за заявка за регистрация (от клиента към API)
+    public class RegisterRequestModel
+    {
+        [Required]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Phone]
+        public string? PhoneNumber { get; set; }
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    // Модел за отговор от регистрация (от API към клиента)
+    public class RegisterResponseModel
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+}

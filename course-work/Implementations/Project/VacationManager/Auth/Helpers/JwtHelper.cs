@@ -13,13 +13,13 @@ namespace VacationManager.Auth.Helpers
         {
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             byte[] key = Encoding.ASCII.GetBytes(jwtSettings.Key); // store securely in appsettings
-            List<Claim> claims = new List<Claim>
-            {
+            List<Claim> claims =
+            [
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.Role, user.Role.ToString()),
                 new("Name", $"{user.Name} {user.LastName}")
-            };
+            ];
 
             SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
             {

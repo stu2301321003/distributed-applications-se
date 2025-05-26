@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VacationManager.Auth.Models
+namespace VacationManager.Users.Models
 {
     public class UserRegisterModel()
     {

@@ -1,0 +1,30 @@
+﻿@page "/"
+@using Blazored.LocalStorage
+@using VacationManager.UI.Api.Services.Abstractions
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+@inject IApiService ApiService
+@inject JwtAuthenticationStateProvider AuthProvider
+
+<PageTitle>Vacation manager</PageTitle>
+<h1>Vacation manager</h1>
+
+<AuthorizeView>
+    <VacationManager.UI.Shared.RequireRole Role="Dev">
+        <h4>
+            Hi Dev!
+        </h4>
+    </VacationManager.UI.Shared.RequireRole>
+</AuthorizeView>
+
+<h3>Companies that trust us:</h3>
+
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // var response = ApiService.GetAsync<>()
+    }
+}

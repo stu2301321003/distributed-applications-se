@@ -15,7 +15,7 @@ namespace VacationManager.Companies.Services.Implementations
 
         public async Task<List<CompanyReadModel>> GetAsync(string? name, string? sortBy, string? sortDir, int page, int pageSize)
         {
-            var query = context.Companies.AsQueryable();
+            IQueryable<Company> query = context.Companies.AsQueryable();
 
             if (!string.IsNullOrEmpty(name))
                 query = query.Where(c => c.Name.Contains(name));
@@ -44,7 +44,7 @@ namespace VacationManager.Companies.Services.Implementations
 
         public async Task<Company?> CreateAsync(CompanyCreateModel model, int ceoId)
         {
-            var company = new Company
+            Company company = new Company
             {
                 Name = model.Name,
                 CeoId = ceoId,
@@ -58,7 +58,7 @@ namespace VacationManager.Companies.Services.Implementations
 
         public async Task<bool> UpdateAsync(CompanyUpdateModel model)
         {
-            var company = await context.Companies.FindAsync(model.Id);
+            Company? company = await context.Companies.FindAsync(model.Id);
             if (company == null)
                 return false;
 
@@ -69,7 +69,7 @@ namespace VacationManager.Companies.Services.Implementations
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var company = await context.Companies.FindAsync(id);
+            Company? company = await context.Companies.FindAsync(id);
             if (company == null)
                 return false;
 

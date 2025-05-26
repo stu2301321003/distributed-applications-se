@@ -7,15 +7,22 @@ using VacationManager.Users.Entities;
 
 namespace VacationManager.Database
 {
-    public class AppDbContext(IOptions<ConnectionStrings> connectionStrings) : DbContext
+    public class AppDbContext(DataBaseSettings connectionStrings) : DbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            if (connectionStrings.UseInMemory)
+            {
+                optionsBuilder.UseInMemoryDatabase("VacationManager");
+            }
+            else
+            {
+                optionsBuilder.UseSqlServer(connectionStrings.ConnectionString);
+            }
+
             //optionsBuilder.UseSqlServer("Server=DESKTOP-DR145US\\SQLEXPRESS;Database=MVR2;Trusted_Connection=True;");
 
             //   optionsBuilder.UseSqlServer("Server=DESKTOP-DR145US\\SQLEXPRESS;Database=MVR2;Trusted_Connection=True;");
-            //optionsBuilder.UseSqlServer(connectionStrings.Value.Database);
-            optionsBuilder.UseInMemoryDatabase("VacationManager");
 
             base.OnConfiguring(optionsBuilder);
         }

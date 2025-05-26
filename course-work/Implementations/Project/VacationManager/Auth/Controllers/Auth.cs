@@ -6,6 +6,7 @@ using VacationManager.Auth.Helpers;
 using VacationManager.Auth.Models;
 using VacationManager.Database;
 using VacationManager.Users.Entities;
+using VacationManager.Users.Models;
 using VacationManager.Users.Services.Abstractions;
 
 namespace VacationManager.Auth.Controllers
@@ -20,7 +21,7 @@ namespace VacationManager.Auth.Controllers
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> LogIn([FromBody] UserLoginModel loginModel)
-        {
+            {
             if (loginModel == null || string.IsNullOrEmpty(loginModel.Username) || string.IsNullOrEmpty(loginModel.Password))
                 return BadRequest("Invalid login data.");
 
@@ -88,7 +89,7 @@ namespace VacationManager.Auth.Controllers
             }
 
             logger.LogInformation("User registered successfully with email {Email}", userRegisterModel.Email);
-            return Ok("Registration successful");
+            return Ok(new { Message = "Registration successful" });
         }
     }
 

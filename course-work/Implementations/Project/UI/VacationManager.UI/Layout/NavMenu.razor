@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using VacationManager.UI.Api.Services
+@using VacationManager.UI.Shared
+@using VacationManager.UI.Components
+
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        <NavLink href="/dashboard">Начало</NavLink>
+        <RequireRole Role="CEO">
+            <NavLink href="/companies">Компании</NavLink>
+        </RequireRole>
+        <RequireRole Role="Manager">
+            <NavLink href="/leaves">Отпуски</NavLink>
+        </RequireRole>
+        <RequireRole Role="Employee">
+            <NavLink href="/my-leaves">Моите отпуски</NavLink>
+        </RequireRole>
+        <Logout></Logout>
+    </Authorized>
+    <NotAuthorized>
+        <NavLink href="/login">Вход</NavLink>
+        <NavLink href="/register">Регистрация</NavLink>
+    </NotAuthorized>
+</AuthorizeView>
+@* <div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">VacationManager.UI</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+    <AuthorizeView>
+    <Authorized>
+        <p class="text-muted">
+            Здравей, @context.User.Identity?.Name (@context.User.FindFirst("role")?.Value)
+        </p>
+        <Logout />
+    </Authorized>
+    <NotAuthorized>
+        <NavLink href="/login">Вход</NavLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
+ *@
