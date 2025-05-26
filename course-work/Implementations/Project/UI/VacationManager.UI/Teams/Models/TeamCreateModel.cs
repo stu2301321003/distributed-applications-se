@@ -1,13 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VacationManager.Companies.Models
+namespace VacationManager.UI.Teams.Models
 {
-    public class CompanyCreateModel
+    public class TeamCreateModel
     {
         [Required, StringLength(35, MinimumLength = 2)]
         public string Name { get; set; } = string.Empty;
 
         [Required]
-        public int CeoId { get; set; }
+        public int ManagerId { get; set; }
     }
 }

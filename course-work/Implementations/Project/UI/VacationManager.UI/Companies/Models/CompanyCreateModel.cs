@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VacationManager.Companies.Models
+namespace VacationManager.UI.Companies.Models
 {
     public class CompanyCreateModel
     {
@@ -8,6 +8,6 @@ namespace VacationManager.Companies.Models
         public string Name { get; set; } = string.Empty;
 
         [Required]
-        public int CeoId { get; set; }
+        public int CeoId{ get; set; }
     }
 }

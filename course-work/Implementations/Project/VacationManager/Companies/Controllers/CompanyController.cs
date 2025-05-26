@@ -9,17 +9,10 @@ namespace VacationManager.Companies.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CompanyController : ControllerBase
+    public class CompanyController(ICompanyService companyService) : ControllerBase
     {
-        private readonly ICompanyService _companyService;
-
-        public CompanyController(ICompanyService companyService)
-        {
-            _companyService = companyService;
-        }
-
         [HttpPost]
-        [Authorize(Roles = nameof(Roles.Dev))]
+        [Authorize(Roles = nameof(Roles.CEO))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -27,24 +20,33 @@ namespace VacationManager.Companies.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             int ceoId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            Entities.Company? company = await _companyService.CreateAsync(model, ceoId);
+            Entities.Company? company = await companyService.CreateAsync(model, ceoId);
             return CreatedAtAction(nameof(GetCompanyById), new { id = company.Id }, company);
         }
 
-        [HttpGet]
-        [Authorize(Roles = nameof(Roles.CEO))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [HttpGet("all")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetCompanies(
             [FromQuery] string? name,
+            [FromQuery] string? ceoId,
             [FromQuery] string? sortBy,
             [FromQuery] string? sortDir,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            List<CompanyReadModel> companies = await _companyService.GetAsync(name, sortBy, sortDir, page, pageSize);
-            return Ok(companies);
+            var filters = new Dictionary<string, string>();
+
+            if (!string.IsNullOrWhiteSpace(name))
+                filters["Name"] = name;
+
+            if (!string.IsNullOrWhiteSpace(ceoId))
+                filters["CeoId"] = ceoId;
+
+            var result = await companyService.GetAsync(filters, sortBy, sortDir, page, pageSize);
+            return Ok(result);
         }
+
+
 
         [HttpGet("{id:int}")]
         [Authorize(Roles = nameof(Roles.CEO))]
@@ -53,7 +55,7 @@ namespace VacationManager.Companies.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetCompanyById(int id)
         {
-            Entities.Company? company = await _companyService.GetByIdAsync(id);
+            Entities.Company? company = await companyService.GetByIdAsync(id);
             return company == null ? NotFound() : Ok(company);
         }
 
@@ -66,19 +68,26 @@ namespace VacationManager.Companies.Controllers
         public async Task<IActionResult> UpdateCompany([FromBody] CompanyUpdateModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            bool success = await _companyService.UpdateAsync(model);
+            bool success = await companyService.UpdateAsync(model);
             return success ? Ok() : NotFound();
         }
 
         [HttpDelete("{id:int}")]
-        [Authorize(Roles = nameof(Roles.CEO))]
+        [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Dev)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteCompany(int id)
         {
-            bool success = await _companyService.DeleteAsync(id);
+            bool success = await companyService.DeleteAsync(id);
             return success ? Ok() : NotFound();
+        }
+
+        [HttpGet("company-by-ceo-id/{ceoId:int}")]
+        public async Task<IActionResult> GetCompanyByCeoId([FromRoute] int ceoId)
+        {
+            Entities.Company? company = await companyService.GetByIdAsync(ceoId);
+            return company == null ? NotFound() : Ok(company);
         }
     }
 

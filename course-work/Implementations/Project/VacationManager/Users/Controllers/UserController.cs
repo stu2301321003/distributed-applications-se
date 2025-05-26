@@ -152,5 +152,22 @@ namespace VacationManager.Users.Controllers
 
             return Ok("CEO added successfully");
         }
+
+        [HttpPost("unverified")]
+        [Authorize(Roles = nameof(Roles.Dev))]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUnverifiedUsersWithRadzen([FromBody] DataSourceRequest request)
+        {
+            var users = await userService.GetUnverifiedUsersAsync(request);
+            return Ok(users);
+        }
+    }
+    public class DataSourceRequest
+    {
+        public string? SortColumn { get; set; }
+        public string? SortDirection { get; set; }
+        public string? Filter { get; set; }
+        public int Skip { get; set; }
+        public int Take { get; set; }
     }
 }

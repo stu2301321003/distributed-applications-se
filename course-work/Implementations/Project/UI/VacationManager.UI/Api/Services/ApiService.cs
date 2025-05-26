@@ -14,13 +14,14 @@ namespace VacationManager.UI.Api.Services
 
         private async Task<HttpRequestMessage> CreateRequestAsync(HttpMethod method, string relativePath, object? content = null)
         {
-            var token = await localStorage.GetItemAsStringAsync("authToken");
+            string? tokenSerialized = await localStorage.GetItemAsStringAsync("authToken");
+
             var url = $"{_baseUrl}/{relativePath.TrimStart('/')}";
 
             var request = new HttpRequestMessage(method, url);
 
-            if (!string.IsNullOrWhiteSpace(token))
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (!string.IsNullOrWhiteSpace(tokenSerialized))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JsonSerializer.Deserialize<string>(tokenSerialized));
 
             if (content is not null)
             {

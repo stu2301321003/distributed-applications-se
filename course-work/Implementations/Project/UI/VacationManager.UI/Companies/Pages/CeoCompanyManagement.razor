@@ -1,0 +1,116 @@
+﻿@page "/ceo/company"
+@using System.Security.Claims
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Companies.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IApiService ApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject AuthenticationStateProvider AuthProvider
+
+<AuthorizeView Roles="CEO">
+    <Authorized>
+        @if (loading)
+        {
+            <p>Loading...</p>
+        }
+        else if (company is null)
+        {
+            <EditForm Model="newCompany" OnValidSubmit="CreateCompany" Context="formContext">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label>Company Name</label>
+                    <RadzenTextBox @bind-Value="newCompany.Name" Style="width: 300px;" />
+                    <ValidationMessage For="@(() => newCompany.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <RadzenButton Text="Create Company" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <RadzenCard Style="width: 400px;">
+                <h3>@company.Name</h3>
+                <p>Employees: @company.Teams.Select(t => t.Users.Count).Sum()</p>
+                <RadzenButton Text="Manage" ButtonStyle="ButtonStyle.Info" Style="margin-right: 1em;" />
+                <RadzenButton Text="Delete" ButtonStyle="ButtonStyle.Danger" Click="@ConfirmDeleteCompany" />
+            </RadzenCard>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>Access Denied.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    bool loading = true;
+    Company? company;
+    CompanyCreateModel newCompany = new();
+    int ceoId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            ceoId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+            await LoadCompany();
+        }
+    }
+
+    private async Task LoadCompany()
+    {
+        loading = true;
+        var result = await ApiService.GetAsync<Company>($"api/Company/company-by-ceo-id/{ceoId}");
+        if (result.IsSuccess)
+        {
+            company = result.Data;
+        }
+        else
+        {
+            company = null;
+        }
+
+        loading = false;
+    }
+
+    private async Task CreateCompany()
+    {
+        newCompany.CeoId = ceoId; // Set CEO ID before sending
+        var result = await ApiService.PostAsync<CompanyCreateModel, Company>("api/Company", newCompany);
+
+        if (result.IsSuccess)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Created", "Company created successfully");
+            await LoadCompany(); // Refresh company info
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", result.ErrorMessage ?? "Failed to create company");
+        }
+    }
+
+    private async Task ConfirmDeleteCompany()
+    {
+        bool? confirmed = await DialogService.Confirm("Are you sure you want to delete this company?", "Confirm Delete");
+        if (confirmed == true && company is not null)
+        {
+            var result = await ApiService.DeleteAsync($"api/Company/{company.Id}");
+            if (result.IsSuccess)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Deleted", "Company deleted");
+                company = null;
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "Could not delete company");
+            }
+        }
+    }
+}

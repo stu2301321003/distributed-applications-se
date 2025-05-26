@@ -4,6 +4,9 @@ using VacationManager.Database;
 using VacationManager.Users.Entities;
 using VacationManager.Users.Models;
 using VacationManager.Users.Services.Abstractions;
+using System.Linq.Dynamic.Core;
+using System.Linq;
+using VacationManager.Users.Controllers;
 
 namespace VacationManager.Users.Services.Implementations
 {
@@ -110,5 +113,34 @@ namespace VacationManager.Users.Services.Implementations
             }
         }
 
+        public async Task<List<User>> GetUnverifiedUsersAsync(DataSourceRequest request)
+        {
+            IQueryable<User> query = context.Users
+                .Where(u => u.Role == Roles.Unverified);
+
+            // Apply dynamic sorting
+            if (!string.IsNullOrWhiteSpace(request.SortColumn))
+            {
+                var sort = $"{request.SortColumn} {(request.SortDirection == "desc" ? "descending" : "ascending")}";
+                query = query.OrderBy(sort);
+            }
+
+            // Apply filters
+            if (!string.IsNullOrWhiteSpace(request.Filter))
+            {
+                query = query.Where(request.Filter); // Use Radzen-compatible filter
+            }
+
+            var total = await query.CountAsync();
+
+            var users = await query
+                .Skip(request.Skip)
+                .Take(request.Take)
+                .ToListAsync();
+
+            return users;
+        }
     }
+
+    //public record UserForVerificationModel(string FirstName, Stream)
 }

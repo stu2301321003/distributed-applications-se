@@ -1,0 +1,109 @@
+﻿@page "/admin/unverified-users"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Radzen
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Commons.Models
+@using VacationManager.UI.Users.Models
+@inject IApiService ApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<AuthorizeView Roles="Dev">
+    <Authorized>
+        <h3>Unverified Users</h3>
+
+        <RadzenDataGrid @ref="grid"
+                        LoadData="@LoadUsers"
+                        Data="users"
+                        TItem="User"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="User" Property="Name" Title="First Name" />
+                <RadzenDataGridColumn TItem="User" Property="LastName" Title="Last Name" />
+                <RadzenDataGridColumn TItem="User" Property="Email" Title="Email" />
+                <RadzenDataGridColumn TItem="User" Property="PhoneNumber" Title="Phone" />
+
+                <RadzenDataGridColumn TItem="User" Title="Actions" Context="user">
+                    <Template Context="user">
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                      Text="Make CEO" Click="@(args => ConfirmMakeCeo(user.Id))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </Authorized>
+    <NotAuthorized>
+        <p>Access denied.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+<RadzenDialog/>
+
+@code {
+    List<User> users = new List<User>();
+    int totalUsers;
+    RadzenDataGrid<User>? grid; // just declare, do NOT new()
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers(new DataSourceRequest());
+
+        // return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task LoadUsers(LoadDataArgs args)
+    {
+        var request = new DataSourceRequest()
+            {
+                Skip = args?.Skip / args?.Top ?? 0,
+                Take = args?.Top ?? 10,
+                SortColumn = args?.Sorts?.FirstOrDefault()?.Property ?? "Id",
+                SortDirection = args?.Sorts?.FirstOrDefault()?.SortOrder == SortOrder.Descending ? "desc" : "asc",
+                Filter = args?.Filter
+            };
+
+        var result = await ApiService.PostAsync<DataSourceRequest, List<User>>("User/unverified", request);
+
+        users = result.Data ?? new List<User>();
+        totalUsers = result.Data?.Count ?? 0;/* ideally, get total count from your API result, not users.Count */;
+
+
+        Console.WriteLine(totalUsers);
+        StateHasChanged();
+    }
+
+    private async Task LoadUsers(DataSourceRequest request)
+    {
+        var result = await ApiService.PostAsync<DataSourceRequest, List<User>>("User/unverified", request);
+
+        users = result.Data ?? new List<User>();
+        totalUsers = result.Data?.Count ?? 0;/* ideally, get total count from your API result, not users.Count */;
+
+
+        Console.WriteLine(totalUsers);
+        StateHasChanged();
+    }
+
+    private async Task ConfirmMakeCeo(int userId)
+    {
+        var confirmed = await DialogService.Confirm("Make this user CEO?", "Confirm", new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "Cancel" });
+        if (confirmed == true)
+        {
+            var response = await ApiService.PostAsync<int, string>("User/create/ceo", userId);
+            if (response.IsSuccess)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Success", "User promoted to CEO");
+                await grid!.Reload();  // Reload the grid after update
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "Could not update user");
+            }
+        }
+    }
+}

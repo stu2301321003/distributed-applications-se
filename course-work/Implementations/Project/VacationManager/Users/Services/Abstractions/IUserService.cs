@@ -1,4 +1,5 @@
-﻿using VacationManager.Users.Entities;
+﻿using VacationManager.Users.Controllers;
+using VacationManager.Users.Entities;
 using VacationManager.Users.Models;
 
 namespace VacationManager.Users.Services.Abstractions
@@ -14,7 +15,7 @@ namespace VacationManager.Users.Services.Abstractions
         Task<bool> RejectUserAsync(int userId);
         Task<bool> DeleteUserAsync(int userId);
         Task<bool> AddUserAsync(User user);
-
+        Task<List<User>> GetUnverifiedUsersAsync(DataSourceRequest request);
     }
 
 }
