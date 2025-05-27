@@ -119,9 +119,6 @@ namespace VacationManager.Leaves.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RejectLeave([FromRoute] int id, [FromQuery] string message)
         {
-            if (string.IsNullOrWhiteSpace(message))
-                return BadRequest("Rejection message is required.");
-
             bool success = await leavesService.RejectAsync(id, message);
             return success ? Ok() : NotFound();
         }
