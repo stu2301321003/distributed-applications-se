@@ -7,8 +7,10 @@
 
     <main>
         <div class="top-row px-4">
-            <div>Hi @userName</div>
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            @if (!string.IsNullOrEmpty(userName))
+            {
+                <div>Hi @userName</div>
+            }
         </div>
 
         <article class="content px-4">
@@ -17,10 +19,10 @@
     </main>
 </div>
 
-<RadzenDialog/>
+<RadzenDialog />
 <RadzenNotification />
 
-@code{
+@code {
     private string? userName;
 
     protected override async Task OnInitializedAsync()

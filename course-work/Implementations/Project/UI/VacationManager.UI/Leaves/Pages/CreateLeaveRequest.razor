@@ -76,7 +76,7 @@ else
                     <td>@leave.To.ToShortDateString()</td>
                     <td>@leave.Type</td>
                     <td>@leave.Description</td>
-                    <td>@leave.IsAccepted</td>
+                    <td>@(leave.IsAccepted == null ? "Pending" : leave.IsAccepted.Value ? "Approved" : "Rejected" )</td>
                     <td>@leave.ResponseMessage</td>
                 </tr>
             }

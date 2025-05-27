@@ -7,80 +7,67 @@
 
 <AuthorizeView>
     <Authorized>
-        <NavLink href="/dashboard">Home</NavLink>
+        <NavLink href="/" class="nav-button" ActiveClass="nav-button-active">Home</NavLink>
+        <br />
+
         <RequireRole Role="CEO">
-            <NavLink href="/ceo/company">My company</NavLink>
-        </RequireRole>
-        <RequireRole Role="Manager">
-            <NavLink href="/leaves">Leave Requests</NavLink>
-            <NavLink href="/leaves/create">Create Leaves</NavLink>
-        </RequireRole>
-        <RequireRole Role="Employee">
-            <NavLink href="/my-leaves">My Leaves</NavLink>
-            <NavLink href="/leaves/create">Create Leaves</NavLink>
-        </RequireRole>
-        <RequireRole Role="Dev">
-            <NavLink href="/admin/unverified-users">Unverified Users</NavLink>
+            <NavLink href="/ceo/company" class="nav-button" ActiveClass="nav-button-active">My company</NavLink>
+            <br />
+            <NavLink href="/leaves/manage" class="nav-button" ActiveClass="nav-button-active">Leave Requests</NavLink>
         </RequireRole>
 
-        <div class="mb-0">
+        <RequireRole Role="Manager">
+            <NavLink href="/leaves/manage" class="nav-button" ActiveClass="nav-button-active">Leave Requests</NavLink>
+            <br />
+            <NavLink href="/leaves/create" class="nav-button" ActiveClass="nav-button-active">Create Leaves</NavLink>
+        </RequireRole>
+
+        <RequireRole Role="Employee">
+            <NavLink href="/my-leaves" class="nav-button" ActiveClass="nav-button-active">My Leaves</NavLink>
+            <br />
+            <NavLink href="/leaves/create" class="nav-button" ActiveClass="nav-button-active">Create Leaves</NavLink>
+        </RequireRole>
+
+        <RequireRole Role="Dev">
+            <NavLink href="/admin/unverified-users" class="nav-button" ActiveClass="nav-button-active">Unverified Users</NavLink>
+        </RequireRole>
+
+        <div class="mb-0 mt-2">
             <Logout></Logout>
         </div>
     </Authorized>
+
     <NotAuthorized>
-        <NavLink href="/login">Login</NavLink>
-        <NavLink href="/register">Register</NavLink>
-    </NotAuthorized>
-</AuthorizeView>
-@* <div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">VacationManager.UI</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-    <AuthorizeView>
-    <Authorized>
-        <p class="text-muted">
-            Здравей, @context.User.Identity?.Name (@context.User.FindFirst("role")?.Value)
-        </p>
-        <Logout />
-    </Authorized>
-    <NotAuthorized>
-        <NavLink href="/login">Вход</NavLink>
+        <NavLink href="/login" class="nav-button" ActiveClass="nav-button-active">Login</NavLink>
+        <NavLink href="/register" class="nav-button" ActiveClass="nav-button-active">Register</NavLink>
     </NotAuthorized>
 </AuthorizeView>
 
-</div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
+<style>
+    .nav-button {
+        display: inline-block;
+        background-color: #007bff;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        margin-right: 0.5rem;
+        border: none;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.2s ease-in-out;
+        cursor: pointer;
     }
-}
- *@
+
+        .nav-button:hover {
+            background-color: #0056b3;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .nav-button:active,
+        .nav-button-active {
+            background-color: #004085;
+        }
+
+</style>
