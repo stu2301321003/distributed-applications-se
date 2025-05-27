@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using VacationManager.Auth.Models;
 using VacationManager.Commons.Enums;
 using VacationManager.Leaves.Entities;
@@ -36,16 +37,24 @@ namespace VacationManager.Leaves.Controllers
         [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLeaves(
-            [FromQuery] int? userId,
-            [FromQuery] LeaveType? type,
-            [FromQuery] string? sortBy,
-            [FromQuery] string? sortDir,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+    [FromQuery] LeaveType? type,
+    [FromQuery] string? sortBy,
+    [FromQuery] string? sortDir,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
         {
-            List<Leave> leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (userIdClaim == null || roleClaim == null)
+                return Unauthorized();
+
+            int userId = int.Parse(userIdClaim);
+
+            var leaves = await leavesService.GetFilteredLeavesAsync(userId, roleClaim, type, sortBy, sortDir, page, pageSize);
             return Ok(leaves);
         }
+
 
         [HttpGet("all/{userId:int}")]
         [Authorize(Roles = $"{nameof(Roles.Employee)},{nameof(Roles.Manager)}")]

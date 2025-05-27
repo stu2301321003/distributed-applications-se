@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using VacationManager.Auth.Models;
 using VacationManager.Commons.Enums;
 using VacationManager.Database;
 using VacationManager.Leaves.Entities;
 using VacationManager.Leaves.Models;
 using VacationManager.Leaves.Services.Abstractions;
+using VacationManager.Teams.Entities;
 
 namespace VacationManager.Leaves.Services.Implementations
 {
@@ -31,30 +33,59 @@ namespace VacationManager.Leaves.Services.Implementations
             {
                 return false;
             }
-            
+
         }
 
-        public async Task<List<Leave>> GetAsync(int? userId, LeaveType? type, string? sortBy, string? sortDir, int page, int pageSize)
+        public async Task<List<Leave>> GetFilteredLeavesAsync(
+         int userId,
+         string role,
+         LeaveType? type,
+         string? sortBy,
+         string? sortDir,
+         int page,
+         int pageSize)
         {
-            IQueryable<Leave> query = context.Leaves.AsQueryable();
-            if (userId.HasValue)
-                query = query.Where(l => l.UserId == userId);
-            
-            if (type.HasValue)
-                query = query.Where(l => l.Type == type);
-            
-            if (!string.IsNullOrEmpty(sortBy))
+            var leaves = context.Leaves.Include(l => l.User)
+                                                .ThenInclude(u => u.Team)
+                                                .ThenInclude(t => t.Company)
+                                                .AsSplitQuery();
+
+
+            // 1) Load the user and their Team (if any)
+            var user = await context.Users
+                .Include(u => u.Team)        // the team they belong to (as an employee)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return [];
+
+            List<Leave> filteredLeaves = [];
+            if (user.Role == Roles.CEO)
             {
-                query = sortDir == "desc"
-                    ? query.OrderByDescending(e => EF.Property<object>(e, sortBy))
-                    : query.OrderBy(e => EF.Property<object>(e, sortBy));
+                var company = await context.Companies.FirstOrDefaultAsync(c => c.CeoId == user.Id);
+
+                if (company == null)
+                {
+                    return [];
+                }
+
+                filteredLeaves = await leaves.Where(l => l.User.Team.CompanyId == company.Id).ToListAsync();
+            }
+            else
+            {
+                filteredLeaves = await leaves.Where(l => l.User.TeamId == user.TeamId && l.UserId != user.Id).ToListAsync();
             }
 
-            return await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            foreach (var item in filteredLeaves)
+            {
+                item.User.Team = null;
+                item.User.TeamId = null;
+            }
+
+            return filteredLeaves;
         }
+
+
 
         public async Task<List<Leave>> GetAsync(int? userId)
         {
@@ -90,7 +121,7 @@ namespace VacationManager.Leaves.Services.Implementations
             return true;
         }
 
-        public async Task<bool> RejectAsync(int id, string reason)
+        public async Task<bool> RejectAsync(int id, string? reason)
         {
             Leave? leave = await context.Leaves.FindAsync(id);
             if (leave == null) return false;

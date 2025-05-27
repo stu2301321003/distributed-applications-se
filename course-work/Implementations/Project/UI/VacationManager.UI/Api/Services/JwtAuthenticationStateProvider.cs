@@ -128,4 +128,34 @@ public class JwtAuthenticationStateProvider(ILocalStorageService localStorage) :
             return null;
         }
     }
+
+    public async Task<string?> GetUserRoleAsync()
+    {
+        var token = await localStorage.GetItemAsStringAsync("authToken");
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        token = token.Trim('\"');
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(token))
+            return null;
+
+        try
+        {
+            var jwt = handler.ReadJwtToken(token);
+
+            // Try to get "role" claim
+            if (jwt.Payload.TryGetValue("role", out var roleValue))
+            {
+                return roleValue.ToString();
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
 }

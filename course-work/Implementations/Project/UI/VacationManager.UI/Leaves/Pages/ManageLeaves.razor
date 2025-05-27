@@ -1,0 +1,176 @@
+﻿@page "/leaves/manage"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Leaves.Models
+@inject IApiService ApiService
+@inject JwtAuthenticationStateProvider AuthProvider
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<AuthorizeView Roles="CEO,Manager">
+    <Authorized>
+        <h3 class="mb-3">Manage Leave Requests</h3>
+
+        @if (loading)
+        {
+            <p>Loading leave requests...</p>
+        }
+        else if (leaveRequests == null || !leaveRequests.Any())
+        {
+            <p>No pending leave requests.</p>
+        }
+        else
+        {
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var leave in leaveRequests)
+                    {
+                        <tr>
+                            <td>@leave.User.Name</td>
+                            <td>@leave.User.LastName</td>
+                            <td>@leave.User.Email</td>
+                            <td>@leave.From.ToShortDateString()</td>
+                            <td>@leave.To.ToShortDateString()</td>
+                            <td>@leave.Type</td>
+                            <td>@leave.Description</td>
+                            <td>
+                                @if (leave.IsAccepted == null)
+                                {
+                                    <span class="text-warning">Pending</span>
+                                }
+                                else if (leave.IsAccepted == true)
+                                {
+                                    <span class="text-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">Rejected</span>
+
+                                    <br />
+                                    <small>@leave.ResponseMessage</small>
+                                }
+                            </td>
+                            <td>
+                                @if (leave.IsAccepted == null)
+                                {
+                                    <button class="btn btn-sm btn-success me-1" @onclick="@(() => Approve(leave.Id))">Approve</button>
+                                    <button class="btn btn-sm btn-danger" @onclick="@(() => PromptReject(leave.Id))">Reject</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>Unauthorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<Leave>? leaveRequests;
+    private int currentUserId;
+    private string currentUserRole = "";
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+
+        currentUserId = await AuthProvider.GetUserIdAsync() ?? 0;
+        currentUserRole = await AuthProvider.GetUserRoleAsync() ?? "Manager";
+
+        await LoadLeaveRequests();
+    }
+
+    private async Task LoadLeaveRequests()
+    {
+        loading = true;
+        var result = await ApiService.GetAsync<List<Leave>>("Leaves?sortBy=From&sortDir=asc");
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            leaveRequests = result.Data;
+        }
+        else
+        {
+            leaveRequests = new();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = result.ErrorMessage ?? "Failed to load leave requests"
+                });
+        }
+
+        loading = false;
+    }
+
+    private async Task Approve(int id)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to approve this leave?", "Confirm Approval");
+        if (confirmed == true)
+        {
+            var res = await ApiService.PutAsync<object, string>($"Leaves/approve/{id}", null!);
+            if (res.IsSuccess)
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Approved",
+                        Detail = "Leave approved successfully."
+                    });
+
+                await LoadLeaveRequests();
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = res.ErrorMessage ?? "Failed to approve leave."
+                    });
+            }
+        }
+    }
+
+    private async Task PromptReject(int id)
+    {
+            var res = await ApiService.PutAsync<object, string>($"Leaves/reject/{id}", null!);
+            if (res.IsSuccess)
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Rejected",
+                        Detail = "Leave rejected."
+                    });
+
+                await LoadLeaveRequests();
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = res.ErrorMessage ?? "Failed to reject leave."
+                    });
+            }
+    }
+}
