@@ -60,7 +60,7 @@ namespace VacationManager.Teams.Controllers
             if (!updated)
                 return NotFound();
 
-            return Ok("Team updated successfully.");
+            return Ok();
         }
 
         [HttpDelete("{id:int}")]
@@ -73,7 +73,7 @@ namespace VacationManager.Teams.Controllers
             if (!deleted)
                 return NotFound();
 
-            return Ok("Team deleted successfully.");
+            return Ok();
         }
 
         [HttpPost("AddUser")]
@@ -90,7 +90,7 @@ namespace VacationManager.Teams.Controllers
             if (!result)
                 return BadRequest("Failed to add user to team. The user may not exist or is already in the team.");
 
-            return Ok("User added to the team successfully.");
+            return Ok();
         }
 
 
@@ -105,7 +105,7 @@ namespace VacationManager.Teams.Controllers
             if (!result)
                 return NotFound("User not found in team or team does not exist.");
 
-            return Ok("User removed from the team successfully.");
+            return Ok();
         }
 
 
@@ -121,7 +121,7 @@ namespace VacationManager.Teams.Controllers
             if (!result)
                 return BadRequest("User must be a member of the team to become the manager.");
 
-            return Ok("Manager updated successfully.");
+            return Ok();
         }
 
 

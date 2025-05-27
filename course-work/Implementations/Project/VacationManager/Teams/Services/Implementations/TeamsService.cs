@@ -103,6 +103,11 @@ namespace VacationManager.Teams.Services.Implementations
 
             var user = team.Employees.First(e => e.Id == userId);
 
+            if (user.Role is not Auth.Models.Roles.Employee)
+            {
+                return false;
+            }
+
             user.Role = Auth.Models.Roles.Manager;
             team.ManagerId = userId;
             await context.SaveChangesAsync();
@@ -137,6 +142,11 @@ namespace VacationManager.Teams.Services.Implementations
             // Avoid duplicates
             if (team.Employees.Any(e => e.Id == user.Id))
                 return false;
+
+            if (user.Role is not Auth.Models.Roles.Unverified or Auth.Models.Roles.Employee)
+            {
+                return false;
+            }
 
             user.Role = Auth.Models.Roles.Employee;
             team.Employees.Add(user);

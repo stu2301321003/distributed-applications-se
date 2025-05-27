@@ -1,0 +1,138 @@
+﻿@page "/leaves/create"
+@using VacationManager.UI.Api.Services.Abstractions
+@using VacationManager.UI.Leaves.Models
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@inject JwtAuthenticationStateProvider AuthStateProvider
+
+<h3>Create Leave Request</h3>
+
+<EditForm Model="@leaveModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>From Date</label>
+        <InputDate @bind-Value="leaveModel.From" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>To Date</label>
+        <InputDate @bind-Value="leaveModel.To" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Leave Type</label>
+        <InputSelect @bind-Value="leaveModel.Type" class="form-control">
+            @foreach (var type in Enum.GetValues(typeof(LeaveType)))
+            {
+                <option value="@type">@type</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label>Description</label>
+        <InputTextArea @bind-Value="leaveModel.Description" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-info mt-3">@message</div>
+}
+
+<hr />
+
+<h4 class="mt-4">My Leave Requests</h4>
+
+@if (leaveRequests == null)
+{
+    <p>Loading...</p>
+}
+else if (!leaveRequests.Any())
+{
+    <p>You have not submitted any leave requests.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var leave in leaveRequests)
+            {
+                <tr>
+                    <td>@leave.From.ToShortDateString()</td>
+                    <td>@leave.To.ToShortDateString()</td>
+                    <td>@leave.Type</td>
+                    <td>@leave.Description</td>
+                    <td>@leave.IsAccepted</td>
+                    <td>@leave.ResponseMessage</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private LeaveCreateModel leaveModel = new();
+    private List<Leave>? leaveRequests;
+    private string? message;
+    private int currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUserId = await AuthStateProvider.GetUserIdAsync() ?? 0;
+
+        leaveModel = new LeaveCreateModel
+            {
+                UserId = currentUserId,
+                From = DateTime.Today,
+                To = DateTime.Today
+            };
+
+        await LoadLeaveRequestsAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await ApiService.PostAsync<LeaveCreateModel, string>("Leaves", leaveModel);
+
+        if (result.IsSuccess)
+        {
+            message = "Leave request submitted successfully!";
+            await LoadLeaveRequestsAsync(); // Refresh grid
+            leaveModel.From = DateTime.Today;
+            leaveModel.To = DateTime.Today;
+            leaveModel.Description = string.Empty;
+        }
+        else
+        {
+            message = $"Failed to submit: {result.ErrorMessage ?? "Unknown error"}";
+        }
+    }
+
+    private async Task LoadLeaveRequestsAsync()
+    {
+        var result = await ApiService.GetAsync<List<Leave>>($"Leaves/all/{currentUserId}");
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            leaveRequests = result.Data;
+        }
+        else
+        {
+            message = $"Could not load leave requests: {result.ErrorMessage}";
+        }
+    }
+}

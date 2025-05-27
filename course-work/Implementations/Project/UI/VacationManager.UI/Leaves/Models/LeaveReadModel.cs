@@ -1,18 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-using VacationManager.Commons.Enums;
-using VacationManager.Users.Entities;
-
-namespace VacationManager.Leaves.Entities
+﻿namespace VacationManager.UI.Leaves.Models
 {
-    public class Leave
+    public class LeaveReadModel
     {
         public int Id { get; set; }
-        [Required]
         public DateTime From { get; set; }
-        [Required]
         public DateTime To { get; set; }
         public int UserId { get; set; }
-        public User User { get; set; } = null!;
         public LeaveType Type { get; set; }
         public string? Description { get; set; }
         public bool? IsAccepted { get; set; }

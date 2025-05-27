@@ -2,11 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using VacationManager.Auth.Models;
 using VacationManager.Commons.Enums;
+using VacationManager.Leaves.Entities;
 using VacationManager.Leaves.Models;
 using VacationManager.Leaves.Services.Abstractions;
 
 namespace VacationManager.Leaves.Controllers
 {
+    [ApiController]
+    [Route("[controller]")]
     public class LeavesController(ILeaveService leavesService) : ControllerBase
     {
 
@@ -17,13 +20,13 @@ namespace VacationManager.Leaves.Controllers
         [Authorize(Roles = $"{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult CreateLeave([FromBody] LeaveCreateModel model)
+        public async Task <IActionResult> CreateLeave([FromBody] LeaveCreateModel model)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            Task<LeaveReadModel> createdLeave = leavesService.CreateAsync(model);
-            return CreatedAtAction(nameof(GetLeaveById), new { id = createdLeave.Id }, createdLeave);
+            bool isSuccessful = await leavesService.CreateAsync(model);
+            return isSuccessful ? Ok() : StatusCode(500, "Something went wrong");
         }
 
         /// <summary>
@@ -40,9 +43,19 @@ namespace VacationManager.Leaves.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            List<LeaveReadModel> leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
+            List<Leave> leaves = await leavesService.GetAsync(userId, type, sortBy, sortDir, page, pageSize);
             return Ok(leaves);
         }
+
+        [HttpGet("all/{userId:int}")]
+        [Authorize(Roles = $"{nameof(Roles.Employee)},{nameof(Roles.Manager)}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetLeaves(int userId)
+        {
+            List<Leave> leaves = await leavesService.GetAsync(userId);
+            return Ok(leaves);
+        }
+
 
         /// <summary>
         /// Get a leave by ID. Allowed roles: CEO, Manager, Employee
@@ -51,9 +64,9 @@ namespace VacationManager.Leaves.Controllers
         [Authorize(Roles = $"{nameof(Roles.CEO)},{nameof(Roles.Manager)},{nameof(Roles.Employee)}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult GetLeaveById(int id)
+        public async Task<IActionResult> GetLeaveById(int id)
         {
-            Task<LeaveReadModel?> leave = leavesService.GetByIdAsync(id);
+            Leave? leave = await leavesService.GetByIdAsync(id);
             return leave == null ? NotFound() : Ok(leave);
         }
 

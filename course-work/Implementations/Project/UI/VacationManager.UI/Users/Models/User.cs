@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Data;
 using VacationManager.UI.Teams.Models;
 
 namespace VacationManager.UI.Users.Models

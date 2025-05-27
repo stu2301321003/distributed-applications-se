@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using VacationManager.Commons.Enums;
-using VacationManager.Users.Entities;
+using VacationManager.UI.Users.Models;
 
-namespace VacationManager.Leaves.Entities
+namespace VacationManager.UI.Leaves.Models
 {
     public class Leave
     {
@@ -12,7 +11,7 @@ namespace VacationManager.Leaves.Entities
         [Required]
         public DateTime To { get; set; }
         public int UserId { get; set; }
-        public User User { get; set; } = null!;
+        public User User { get; set; } = new();
         public LeaveType Type { get; set; }
         public string? Description { get; set; }
         public bool? IsAccepted { get; set; }

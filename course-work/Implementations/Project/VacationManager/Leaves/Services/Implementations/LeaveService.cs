@@ -9,24 +9,32 @@ namespace VacationManager.Leaves.Services.Implementations
 {
     public class LeaveService(AppDbContext context) : ILeaveService
     {
-        public async Task<LeaveReadModel> CreateAsync(LeaveCreateModel model)
+        public async Task<bool> CreateAsync(LeaveCreateModel model)
         {
-            Leave leave = new()
+            try
             {
-                From = model.From,
-                To = model.To,
-                UserId = model.UserId,
-                Type = model.Type,
-                Description = model.Description,
-                CreatedAt = DateTime.UtcNow
-            };
+                Leave leave = new()
+                {
+                    From = model.From,
+                    To = model.To,
+                    UserId = model.UserId,
+                    Type = model.Type,
+                    Description = model.Description,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            context.Leaves.Add(leave);
-            await context.SaveChangesAsync();
-            return MapToReadModel(leave);
+                context.Leaves.Add(leave);
+                await context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            
         }
 
-        public async Task<List<LeaveReadModel>> GetAsync(int? userId, LeaveType? type, string? sortBy, string? sortDir, int page, int pageSize)
+        public async Task<List<Leave>> GetAsync(int? userId, LeaveType? type, string? sortBy, string? sortDir, int page, int pageSize)
         {
             IQueryable<Leave> query = context.Leaves.AsQueryable();
             if (userId.HasValue)
@@ -42,18 +50,21 @@ namespace VacationManager.Leaves.Services.Implementations
                     : query.OrderBy(e => EF.Property<object>(e, sortBy));
             }
 
-            return (await query
+            return await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync())
-                .Select(MapToReadModel)
-                .ToList();
+                .ToListAsync();
         }
 
-        public async Task<LeaveReadModel?> GetByIdAsync(int id)
+        public async Task<List<Leave>> GetAsync(int? userId)
         {
-            Leave? leave = await context.Leaves.FindAsync(id);
-            return leave == null ? null : MapToReadModel(leave);
+            return await context.Leaves.Where(l => l.UserId == userId).ToListAsync();
+        }
+
+
+        public async Task<Leave?> GetByIdAsync(int id)
+        {
+            return await context.Leaves.FindAsync(id);
         }
 
         public async Task<bool> UpdateAsync(LeaveUpdateModel model)
